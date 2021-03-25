@@ -2,10 +2,10 @@
 #include <Wire.h>
 //#include <Adafruit_ADS1015.h>
 #include <EEPROM.h>
-//Referring to code from: https://github.com/ejlabs/arduino-nitrox-analyzer 
+//Referring to code from: https://github.com/ejlabs/arduino-nitrox-analyzer
 
 
- int firstTime; // how long since the button was first pressed 
+ int firstTime; // how long since the button was first pressed
 
 //Cycle Time Variables
 bool initialization = true;
@@ -20,9 +20,10 @@ double cur_cycle_time;
 int cur_state = 0;
 
 //Valve Pins
-const int upstream_valve = 4;
-const int downstream_valve_L = 5;
-const int downstream_valve_R = 6;
+const int valve_1 = 4;
+const int valve_2 = 5;
+const int valve_3 = 6;
+const int valve_4 = 7;
 
 float pt1_reading;
 float pt2_reading;
@@ -41,75 +42,62 @@ void setup()
   //ads.begin(); // ads1115 start
   //ads.setGain(GAIN_SIXTEEN);
   Serial.begin(9600);
-  pinMode(upstream_valve, OUTPUT);
-  pinMode(downstream_valve_L, OUTPUT);
-  pinMode(downstream_valve_R, OUTPUT);
+  pinMode(valve_1, OUTPUT);
+  pinMode(valve_2, OUTPUT);
+  pinMode(valve_3, OUTPUT);
+  pinMode(valve_4, OUTPUT);
 
   firstTime = millis();
 
   Serial.println("in Setup");
-  
+
 
 }
-
- void read_sensor(int pt_pin, float var) 
- {
-  float voltage = analogRead(pt_pin);
-  var = voltage * PT_multiplier;
-  //Serial.print("Voltage: ");
-  //Serial.println(var);
- }
 
 void loop()
 {
 
- //Read Sensors
- //read_oxygen_sensor(o2_reading);
- //Serial.print("O2 Sensor:"); Serial.println(o2_reading);
- read_sensor(pt1_pin, pt1_reading);
- read_sensor(pt2_pin, pt2_reading);
- Serial.print("PT1: "); Serial.print(pt1_reading); Serial.print(", PT2: "); Serial.println(pt2_reading);
-
-  //Serial.print("First time: "); Serial.println(firstTime);
-  //Serial.println(millis());
-  //secs_held = (millis() - firstTime) / 1000;
-  
   //cur_cycle_time = secs_held % total_cycle_time;
   cur_cycle_time = (millis() / 1000) % total_cycle_time;
-  Serial.print("cur cycle time: "); Serial.print(cur_cycle_time); Serial.print(" of "); Serial.println(total_cycle_time); 
-  Serial.print("Cur State: "); Serial.println(cur_state);
-  
+  //Serial.print("cur cycle time: "); Serial.print(cur_cycle_time); Serial.print(" of "); Serial.println(total_cycle_time);
+  //Serial.print("Cur State: "); Serial.println(cur_state);
+
     if (cur_cycle_time < 4) {
       //Set state to state 1 if not already (Right Vacuum Regen)
       if (cur_state != 1) {
         Serial.println("In cycle part 1");
-        digitalWrite(upstream_valve, LOW);
-        digitalWrite(downstream_valve_L, LOW);
-        digitalWrite(downstream_valve_R, LOW);
+        //Tube A goes to buffer, Tube B is vacuumed
+        digitalWrite(valve_1, LOW);
+        digitalWrite(valve_2, HIGH);
+        digitalWrite(valve_3, LOW);
+        digitalWrite(valve_4, HIGH);
         cur_state = 1;
       }
       return;
     }
-    if (cur_cycle_time < 8) {        
+    if (cur_cycle_time < 8) {
       //Set state to state 2 if not already (Right Blowdown Regen)
       if (cur_state != 2) {
         Serial.println("In cycle part 2");
-        digitalWrite(upstream_valve, LOW);
-        digitalWrite(downstream_valve_L, HIGH);
-        digitalWrite(downstream_valve_R, HIGH);
-        cur_state = 2;       
+        //Tube A opens
+        digitalWrite(valve_1, LOW);
+        digitalWrite(valve_2, LOW);
+        digitalWrite(valve_3, HIGH);
+        digitalWrite(valve_4, HIGH);
+        cur_state = 2;
       }
       return;
     }
 
-        if (cur_cycle_time < 12) {        
+        if (cur_cycle_time < 12) {
       //Set state to state 2 if not already (Right Blowdown Regen)
       if (cur_state != 3) {
-        Serial.println("In cycle part 2");
-        digitalWrite(upstream_valve, HIGH);
-        digitalWrite(downstream_valve_L, HIGH);
-        digitalWrite(downstream_valve_R, LOW);
-        cur_state = 3;       
+        Serial.println("In cycle part 3");
+        digitalWrite(valve_1, HIGH);
+        digitalWrite(valve_2, HIGH);
+        digitalWrite(valve_3, HIGH);
+        digitalWrite(valve_4, LOW);
+        cur_state = 3;
       }
       return;
     }
@@ -117,14 +105,15 @@ void loop()
     else {
       if (cur_state != 4) {
         Serial.println("In cycle part 4");
-        digitalWrite(upstream_valve, HIGH);
-        digitalWrite(downstream_valve_L, LOW);
-        digitalWrite(downstream_valve_R, HIGH);
-        cur_state = 2;       
+        digitalWrite(valve_1, HIGH);
+        digitalWrite(valve_2, LOW);
+        digitalWrite(valve_3, HIGH);
+        digitalWrite(valve_4, HIGH);
+        cur_state = 4;
       }
       return;
     }
-  
-     
+
+
 
 }
